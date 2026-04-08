@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(gh auth:*)",
+      "Bash(git config:*)",
+      "Bash(curl -s https://api.github.com/user/repos -u \"diliprahul:$\\(git config credential.username\\)\" -d '{\"name\":\"ats-dashboard\",\"description\":\"AI-powered resume analyzer and ATS optimization dashboard\",\"private\":false}' -X POST)"
+    ]
+  }
+}
