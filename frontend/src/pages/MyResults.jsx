@@ -51,8 +51,8 @@ export default function MyResults() {
                     onClick={() => setSelected(selected?.id === r.id ? null : r)}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={s.jobName}>{r.jobName}</div>
-                        <div style={s.jobComp}>{r.companyName}</div>
+                        <div style={s.jobName}>{r.jobName || "Free ATS Analysis"}</div>
+                        <div style={s.jobComp}>{r.companyName || "Self Assessment"}</div>
                         <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>{r.uploadDate} · {r.resumeName}</div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
@@ -80,7 +80,7 @@ export default function MyResults() {
                 <div style={s.detailPanel}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                     <h2 style={{ color: "#f1f5f9", fontSize: 16, fontWeight: 700, margin: 0 }}>
-                      {selected.jobName} <span style={{ color: "#64748b", fontWeight: 400, fontSize: 14 }}>@ {selected.companyName}</span>
+                      {(selected.jobName || "Free ATS Analysis")} <span style={{ color: "#64748b", fontWeight: 400, fontSize: 14 }}>@ {(selected.companyName || "Self Assessment")}</span>
                     </h2>
                     <button style={s.closeBtn} onClick={() => setSelected(null)}>✕</button>
                   </div>

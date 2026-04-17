@@ -13,8 +13,10 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.username || !form.email || !form.password) { setError("Username, email and password required"); return; }
+    if (!/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(form.email)) { setError("Please enter a valid email address"); return; }
     if (form.password !== form.confirm) { setError("Passwords do not match"); return; }
-    if (form.password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (form.password.length < 8) { setError("Password must be at least 8 characters"); return; }
+    if (!/(?=.*[A-Za-z])(?=.*\d)/.test(form.password)) { setError("Password must contain at least one letter and one number"); return; }
     try {
       setLoading(true); setError("");
       const data = await registerUser({ username: form.username, email: form.email, password: form.password, contactNo: form.contactNo, address: form.address });
@@ -62,7 +64,7 @@ export default function Register() {
           <div style={s.row}>
             <div style={s.group}>
               <label style={s.label}>Password *</label>
-              <input type="password" placeholder="Min 6 chars" {...f("password")} />
+              <input type="password" placeholder="Min 8 chars, letters + numbers" {...f("password")} />
             </div>
             <div style={s.group}>
               <label style={s.label}>Confirm Password *</label>

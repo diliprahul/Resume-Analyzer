@@ -54,7 +54,13 @@ export default function AdminJobs() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this job?")) return;
-    try { await adminDeleteJob(id); setJobs(prev => prev.filter(j => j.id !== id)); } catch {}
+    try {
+      await adminDeleteJob(id);
+      setJobs(prev => prev.filter(j => j.id !== id));
+      setSuccess("Job deleted successfully.");
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to delete job. It may have associated submissions.");
+    }
   };
 
   return (

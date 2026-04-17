@@ -11,20 +11,23 @@ export default function Navbar() {
   const isAdmin = user?.role === "ADMIN";
   const active = (path) => location.pathname === path || location.pathname.startsWith(path + "/");
 
-  const navLinks = isAdmin
-    ? [
-        { to: "/admin", label: "Dashboard" },
-        { to: "/admin/jobs", label: "Manage Jobs" },
-        { to: "/admin/resumes", label: "Resumes" },
-        { to: "/admin/feedback", label: "Feedback" },
-      ]
-    : [
-        { to: "/", label: "Dashboard" },
-        { to: "/jobs", label: "Jobs" },
-        { to: "/analyze", label: "ATS Checker" },
-        { to: "/my-results", label: "My Results" },
-        { to: "/feedback", label: "Feedback" },
-      ];
+  const userLinks = [
+    { to: "/", label: "Dashboard" },
+    { to: "/jobs", label: "Jobs" },
+    { to: "/analyze", label: "ATS Checker" },
+    { to: "/my-results", label: "My Results" },
+    { to: "/feedback", label: "Feedback" },
+    { to: "/profile", label: "My Profile" },
+  ];
+
+  const adminLinks = [
+    { to: "/admin", label: "Dashboard" },
+    { to: "/admin/jobs", label: "Manage Jobs" },
+    { to: "/admin/resumes", label: "Resumes" },
+    { to: "/admin/feedback", label: "Feedback" },
+  ];
+
+  const navLinks = isAdmin ? adminLinks : userLinks;
 
   return (
     <nav style={s.nav}>
@@ -37,7 +40,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop links */}
-        <div style={s.links}>
+        <div style={s.links} className="navbar-links">
           {navLinks.map(({ to, label }) => (
             <Link key={to} to={to}
               style={{ ...s.link, ...(active(to) && to !== "/" ? s.activeLink : to === "/" && location.pathname === "/" ? s.activeLink : {}) }}>
@@ -46,14 +49,37 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* User */}
-        <div style={s.right}>
+        {/* User + Hamburger */}
+        <div style={s.right} className="navbar-right">
           <span style={s.username}>👤 {user?.username}</span>
-          <button style={s.logoutBtn} onClick={() => { logout(); navigate("/login"); }}>
+          <button style={s.logoutBtn} className="navbar-logout" onClick={() => { logout(); navigate("/login"); }}>
             Logout
+          </button>
+          {/* Mobile hamburger */}
+          <button style={{ ...s.hamburger, display: "none" }} className="navbar-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+            <span style={{ ...s.hamburgerLine, ...(menuOpen ? s.hamburgerLineOpen1 : {}) }} />
+            <span style={{ ...s.hamburgerLine, ...(menuOpen ? s.hamburgerLineOpen2 : {}) }} />
+            <span style={{ ...s.hamburgerLine, ...(menuOpen ? s.hamburgerLineOpen3 : {}) }} />
           </button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div style={s.mobileMenu}>
+          {navLinks.map(({ to, label }) => (
+            <Link key={to} to={to} style={{ ...s.mobileLink, ...(active(to) ? s.activeMobileLink : {}) }}
+              onClick={() => setMenuOpen(false)}>
+              {label}
+            </Link>
+          ))}
+          <div style={s.mobileDivider} />
+          <Link to="/profile" style={{ ...s.mobileLink, ...(active("/profile") ? s.activeMobileLink : {}) }}
+            onClick={() => setMenuOpen(false)}>
+            🔒 My Profile
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }
@@ -70,4 +96,28 @@ const s = {
   right: { display: "flex", alignItems: "center", gap: 12 },
   username: { color: "#64748b", fontSize: 13 },
   logoutBtn: { background: "none", border: "1px solid #2d2d4e", color: "#94a3b8", padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: "pointer" },
+  hamburger: { display: "none", flexDirection: "column", gap: 5, background: "none", border: "none", cursor: "pointer", padding: 4 },
+  hamburgerLine: { display: "block", width: 22, height: 2, background: "#94a3b8", borderRadius: 2, transition: "all .2s" },
+  hamburgerLineOpen1: { transform: "translateY(7px) rotate(45deg)" },
+  hamburgerLineOpen2: { opacity: 0 },
+  hamburgerLineOpen3: { transform: "translateY(-7px) rotate(-45deg)" },
+  mobileMenu: { display: "flex", flexDirection: "column", background: "#0f0f1a", borderTop: "1px solid #2d2d4e", padding: "8px 0" },
+  mobileLink: { color: "#94a3b8", fontSize: 14, fontWeight: 500, padding: "10px 20px", textDecoration: "none", transition: "all .15s" },
+  activeMobileLink: { color: "#818cf8", background: "#1e1b4b", fontWeight: 600 },
+  mobileDivider: { height: 1, background: "#2d2d4e", margin: "4px 0" },
 };
+
+// Responsive: show hamburger only on small screens via CSS injection
+const style = document.createElement("style");
+style.textContent = `
+  @media (max-width: 768px) {
+    .navbar-links { display: none !important; }
+    .navbar-right > span,
+    .navbar-right > button.navbar-logout { display: none !important; }
+    .navbar-right > button.navbar-hamburger { display: flex !important; }
+  }
+`;
+if (!document.head.querySelector("style[data-navbar]")) {
+  style.setAttribute("data-navbar", "true");
+  document.head.appendChild(style);
+}

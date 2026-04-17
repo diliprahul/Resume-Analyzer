@@ -55,7 +55,7 @@ public class ResumeService {
         // Replace previous submission for this job
         List<ResumeSubmission> existing = submissionRepository
             .findByUserOrderByUploadDateDesc(user).stream()
-            .filter(s -> s.getJob().getId().equals(jobId)).collect(Collectors.toList());
+            .filter(s -> s.getJob() != null && s.getJob().getId().equals(jobId)).collect(Collectors.toList());
         if (!existing.isEmpty()) submissionRepository.deleteAll(existing);
 
         List<String> suggestions = ats.getIssues().stream()
@@ -64,8 +64,10 @@ public class ResumeService {
         ResumeSubmission submission = ResumeSubmission.builder()
             .user(user).job(job).resumeName(file.getOriginalFilename()).resumePath(filePath.toString())
             .score(ats.getTotalScore())
-            .matchedSkills(ats.getMatchedSkills()).missingSkills(ats.getMissingSkills())
-            .extractedSkills(ats.getExtractedSkills()).suggestions(suggestions)
+            .matchedSkills(new HashSet<>(ats.getMatchedSkills()))
+            .missingSkills(new HashSet<>(ats.getMissingSkills()))
+            .extractedSkills(new HashSet<>(ats.getExtractedSkills()))
+            .suggestions(new HashSet<>(suggestions))
             .candidateName(candidateName)
             .candidateEmail(candidateEmail != null ? candidateEmail : user.getEmail())
             .experienceYears(ats.getExperienceYears())
@@ -78,18 +80,18 @@ public class ResumeService {
     public List<ResumeResponse> getMySubmissions(String username) {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found"));
-        return submissionRepository.findByUserOrderByUploadDateDesc(user)
+        return submissionRepository.findByUserIdWithDetails(user.getId())
             .stream().map(s -> mapToResponse(s, null)).collect(Collectors.toList());
     }
 
     public List<ResumeResponse> getAllSubmissions() {
-        return submissionRepository.findAll().stream()
-            .sorted(Comparator.comparing(ResumeSubmission::getUploadDate).reversed())
+        return submissionRepository.findAllWithDetails().stream()
+            .sorted(Comparator.comparing(ResumeSubmission::getUploadDate, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
             .map(s -> mapToResponse(s, null)).collect(Collectors.toList());
     }
 
     public List<ResumeResponse> getSubmissionsForJob(Long jobId) {
-        return submissionRepository.findByJobIdOrderByScoreDesc(jobId)
+        return submissionRepository.findByJobIdWithDetails(jobId)
             .stream().map(s -> mapToResponse(s, null)).collect(Collectors.toList());
     }
 
@@ -100,18 +102,17 @@ public class ResumeService {
             .map(i -> new AtsIssueDto(i.getCategory(), i.getSeverity(), i.getMessage()))
             .collect(Collectors.toList()) : Collections.emptyList();
 
-        return ResumeResponse.builder()
-            .id(s.getId()).jobId(s.getJob().getId())
-            .jobName(s.getJob().getJobName()).companyName(s.getJob().getCompanyName())
+        ResumeResponse.ResumeResponseBuilder builder = ResumeResponse.builder()
+            .id(s.getId())
             .resumeName(s.getResumeName()).totalScore(total)
             .skillScore(ats != null ? ats.getSkillScore() : null)
             .experienceScore(ats != null ? ats.getExperienceScore() : null)
             .educationScore(ats != null ? ats.getEducationScore() : null)
             .keywordScore(ats != null ? ats.getKeywordScore() : null)
-            .matchedSkills(s.getMatchedSkills() != null ? s.getMatchedSkills() : Collections.emptyList())
-            .missingSkills(s.getMissingSkills() != null ? s.getMissingSkills() : Collections.emptyList())
-            .extractedSkills(s.getExtractedSkills() != null ? s.getExtractedSkills() : Collections.emptyList())
-            .suggestions(s.getSuggestions() != null ? s.getSuggestions() : Collections.emptyList())
+            .matchedSkills(s.getMatchedSkills() != null ? new ArrayList<>(s.getMatchedSkills()) : Collections.emptyList())
+            .missingSkills(s.getMissingSkills() != null ? new ArrayList<>(s.getMissingSkills()) : Collections.emptyList())
+            .extractedSkills(s.getExtractedSkills() != null ? new ArrayList<>(s.getExtractedSkills()) : Collections.emptyList())
+            .suggestions(s.getSuggestions() != null ? new ArrayList<>(s.getSuggestions()) : Collections.emptyList())
             .candidateName(s.getCandidateName()).candidateEmail(s.getCandidateEmail())
             .experienceYears(s.getExperienceYears())
             .education(ats != null ? ats.getEducation() : null)
@@ -128,8 +129,17 @@ public class ResumeService {
             .hasStrongActionVerbs(ats != null ? ats.isHasStrongActionVerbs() : null)
             .hasMeasurableImpact(ats != null ? ats.isHasMeasurableImpact() : null)
             .missingSections(ats != null ? ats.getMissingSections() : Collections.emptyList())
-            .formatIssues(ats != null ? ats.getFormatIssues() : Collections.emptyList())
-            .build();
+            .formatIssues(ats != null ? ats.getFormatIssues() : Collections.emptyList());
+
+        if (!s.isFreeAnalyze() && s.getJob() != null) {
+            builder.jobId(s.getJob().getId())
+                   .jobName(s.getJob().getJobName())
+                   .companyName(s.getJob().getCompanyName());
+        } else {
+            builder.jobId(null).jobName("Free ATS Analysis").companyName("Self Assessment");
+        }
+
+        return builder.build();
     }
 
     private String getLabel(double s) {

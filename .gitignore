@@ -18,3 +18,9 @@ application-local.properties
 
 # logs
 *.log
+
+backend/uploads/
+uploads/
+*.pdf
+
+.claude/

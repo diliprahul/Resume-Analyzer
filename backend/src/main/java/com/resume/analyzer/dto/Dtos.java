@@ -4,6 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 public class Dtos {
@@ -12,8 +13,8 @@ public class Dtos {
     @Getter @Setter
     public static class RegisterRequest {
         @NotBlank(message = "Username required") @Size(min = 3, max = 50) private String username;
-        @NotBlank(message = "Password required") @Size(min = 6, message = "Password min 6 chars") private String password;
-        @NotBlank(message = "Email required") @Email(message = "Valid email required") private String email;
+        @NotBlank(message = "Password required") @Size(min = 8, message = "Password must be at least 8 characters") @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", message = "Password must contain at least one letter and one number") private String password;
+        @NotBlank(message = "Email required") @Email(message = "Valid email required") @Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}$", message = "Invalid email format") private String email;
         private String contactNo;
         private String address;
     }
@@ -74,6 +75,19 @@ public class Dtos {
         private Boolean hasEmail, hasPhone, hasLinkedIn, hasGitHub;
         private Boolean hasStrongActionVerbs, hasMeasurableImpact;
         private List<String> missingSections, formatIssues;
+
+        public List<String> getMatchedSkills() {
+            return matchedSkills != null ? new java.util.ArrayList<>(matchedSkills) : Collections.emptyList();
+        }
+        public List<String> getMissingSkills() {
+            return missingSkills != null ? new java.util.ArrayList<>(missingSkills) : Collections.emptyList();
+        }
+        public List<String> getExtractedSkills() {
+            return extractedSkills != null ? new java.util.ArrayList<>(extractedSkills) : Collections.emptyList();
+        }
+        public List<String> getSuggestions() {
+            return suggestions != null ? new java.util.ArrayList<>(suggestions) : Collections.emptyList();
+        }
     }
 
     // ── Free Analyze ──────────────────────────────────────────────────────────

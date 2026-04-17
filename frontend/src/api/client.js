@@ -70,3 +70,8 @@ export const adminGetResumes      = ()     => api.get("/api/admin/resumes").then
 export const adminGetResumesByJob = (jobId)=> api.get(`/api/admin/resumes/job/${jobId}`).then(r => r.data);
 export const adminGetFeedback     = ()     => api.get("/api/admin/feedback").then(r => r.data);
 export const adminGetStats        = ()     => api.get("/api/admin/stats").then(r => r.data);
+
+// User / Profile
+export const getMyProfile  = ()     => api.get("/api/users/me").then(r => r.data);
+export const updateProfile = (data) => api.put("/api/users/me", data).then(r => r.data);
+export const changePassword = (data) => api.put("/api/users/me/password", data).then(r => r.data);

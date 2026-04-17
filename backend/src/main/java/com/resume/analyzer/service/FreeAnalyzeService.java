@@ -2,15 +2,21 @@ package com.resume.analyzer.service;
 
 import com.resume.analyzer.dto.Dtos.AtsIssueDto;
 import com.resume.analyzer.dto.Dtos.FreeAnalyzeResponse;
+import com.resume.analyzer.entity.ResumeSubmission;
+import com.resume.analyzer.entity.User;
+import com.resume.analyzer.repository.ResumeSubmissionRepository;
+import com.resume.analyzer.repository.UserRepository;
 import com.resume.analyzer.util.ResumeParser;
 import com.resume.analyzer.util.SkillExtractor;
 import com.resume.analyzer.util.SkillExtractor.ATSCheckResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,6 +27,11 @@ public class FreeAnalyzeService {
 
     private final ResumeParser resumeParser;
     private final SkillExtractor skillExtractor;
+    private final ResumeSubmissionRepository submissionRepository;
+    private final UserRepository userRepository;
+
+    @Value("${app.upload.dir:uploads/resumes}")
+    private String uploadDir;
 
     private static final List<String> KNOWN_SKILLS = Arrays.asList(
         "java","python","javascript","typescript","react","angular","vue","node.js","nodejs",
@@ -37,7 +48,7 @@ public class FreeAnalyzeService {
         "object oriented","oop","design patterns","system design","data structures","algorithms"
     );
 
-    public FreeAnalyzeResponse analyze(MultipartFile resume, String jobDescription) throws IOException {
+    public FreeAnalyzeResponse analyze(MultipartFile resume, String jobDescription, String username) throws IOException {
         String resumeText = resumeParser.extractText(resume);
         List<String> jdSkills = extractSkillsFromText(jobDescription);
         log.info("Free analyze: {} JD skills, resume length={}", jdSkills.size(), resumeText.length());
@@ -49,11 +60,43 @@ public class FreeAnalyzeService {
             .map(i -> new AtsIssueDto(i.getCategory(), i.getSeverity(), i.getMessage()))
             .collect(Collectors.toList());
 
-        // Build legacy suggestions from issues for backward compat
         List<String> suggestions = ats.getIssues().stream()
             .filter(i -> !i.getSeverity().equals("PASS"))
             .map(i -> i.getMessage())
             .collect(Collectors.toList());
+
+        // Save to database if user is authenticated
+        if (username != null) {
+            try {
+                User user = userRepository.findByUsername(username).orElse(null);
+                if (user != null) {
+                    Path uploadPath = Paths.get(uploadDir);
+                    Files.createDirectories(uploadPath);
+                    String fileName = username + "_free_" + System.currentTimeMillis() + "_" + resume.getOriginalFilename();
+                    Path filePath = uploadPath.resolve(fileName);
+                    Files.write(filePath, resume.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+                    ResumeSubmission submission = ResumeSubmission.builder()
+                        .user(user)
+                        .resumeName(resume.getOriginalFilename())
+                        .resumePath(filePath.toString())
+                        .score(ats.getTotalScore())
+                        .candidateName(candidateName)
+                        .candidateEmail(user.getEmail())
+                        .experienceYears(ats.getExperienceYears())
+                        .freeAnalyze(true)
+                        .build();
+                    submission.setMatchedSkills(new HashSet<>(ats.getMatchedSkills()));
+                    submission.setMissingSkills(new HashSet<>(ats.getMissingSkills()));
+                    submission.setExtractedSkills(new HashSet<>(ats.getExtractedSkills()));
+                    submission.setSuggestions(new HashSet<>(suggestions));
+                    submissionRepository.save(submission);
+                    log.info("Free analyze saved for user {}", username);
+                }
+            } catch (Exception e) {
+                log.error("Failed to save free analyze result: {}", e.getMessage());
+            }
+        }
 
         return FreeAnalyzeResponse.builder()
             .totalScore(ats.getTotalScore()).scoreLabel(ats.getScoreLabel())
@@ -63,7 +106,6 @@ public class FreeAnalyzeService {
             .experienceYears(ats.getExperienceYears()).education(ats.getEducation())
             .skillScore(ats.getSkillScore()).experienceScore(ats.getExperienceScore())
             .educationScore(ats.getEducationScore()).keywordScore(ats.getKeywordScore())
-            // Deep ATS
             .atsIssues(issueDtos)
             .buzzwordsFound(ats.getBuzzwordsFound()).fillerWordsFound(ats.getFillerWordsFound())
             .actionVerbsFound(ats.getActionVerbsFound()).metricsFound(ats.getMetricsFound())

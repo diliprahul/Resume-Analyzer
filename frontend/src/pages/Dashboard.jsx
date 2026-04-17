@@ -109,8 +109,8 @@ export default function Dashboard() {
               : resumes.slice(0, 5).map(r => (
                 <div key={r.id} style={s.row}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={s.rowTitle}>{r.jobName}</div>
-                    <div style={s.rowSub}>{r.companyName} · {r.uploadDate}</div>
+                    <div style={s.rowTitle}>{r.jobName || "Free ATS Analysis"}</div>
+                    <div style={s.rowSub}>{(r.companyName || "Self Assessment")} · {r.uploadDate}</div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 20, fontWeight: 800, color: scoreColor(r.totalScore) }}>{r.totalScore}%</div>

@@ -12,6 +12,7 @@ import AdminJobs   from "./pages/admin/AdminJobs";
 import AdminResumes from "./pages/admin/AdminResumes";
 import AdminFeedback from "./pages/admin/AdminFeedback";
 import FreeAnalyzer from "./pages/FreeAnalyzer";
+import Profile     from "./pages/Profile";
 
 const Protected = ({ children }) => {
   const { user } = useAuth();
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="/my-results"     element={<Protected><MyResults /></Protected>} />
         <Route path="/feedback"       element={<Protected><Feedback /></Protected>} />
         <Route path="/analyze"        element={<Protected><FreeAnalyzer /></Protected>} />
+        <Route path="/profile"        element={<Protected><Profile /></Protected>} />
         <Route path="/admin"          element={<AdminOnly><AdminDashboard /></AdminOnly>} />
         <Route path="/admin/jobs"     element={<AdminOnly><AdminJobs /></AdminOnly>} />
         <Route path="/admin/resumes"  element={<AdminOnly><AdminResumes /></AdminOnly>} />

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -29,37 +30,44 @@ public class AdminController {
     private final ResumeSubmissionRepository submissionRepository;
     private final FeedbackRepository feedbackRepository;
 
+    @Transactional
     @PostMapping("/jobs")
     public ResponseEntity<JobResponse> postJob(@Valid @RequestBody JobRequest req) {
         return ResponseEntity.ok(jobService.postJob(req));
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/jobs")
     public ResponseEntity<List<JobResponse>> getAllJobs() {
         return ResponseEntity.ok(jobService.getAllJobs());
     }
 
+    @Transactional
     @DeleteMapping("/jobs/{id}")
     public ResponseEntity<Map<String, String>> deleteJob(@PathVariable Long id) {
         jobService.deleteJob(id);
         return ResponseEntity.ok(Map.of("message", "Job deleted successfully"));
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/resumes")
     public ResponseEntity<List<ResumeResponse>> getAllResumes() {
         return ResponseEntity.ok(resumeService.getAllSubmissions());
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/resumes/job/{jobId}")
     public ResponseEntity<List<ResumeResponse>> getResumesByJob(@PathVariable Long jobId) {
         return ResponseEntity.ok(resumeService.getSubmissionsForJob(jobId));
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/feedback")
     public ResponseEntity<List<FeedbackResponse>> getAllFeedback() {
         return ResponseEntity.ok(feedbackService.getAllFeedback());
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/stats")
     public ResponseEntity<AdminStats> getStats() {
         return ResponseEntity.ok(AdminStats.builder()

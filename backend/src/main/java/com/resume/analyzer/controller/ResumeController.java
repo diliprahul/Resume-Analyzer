@@ -33,8 +33,9 @@ public class ResumeController {
     @PostMapping("/free-analyze")
     public ResponseEntity<FreeAnalyzeResponse> freeAnalyze(
             @RequestParam("resume") MultipartFile file,
-            @RequestParam(value = "jobDescription", defaultValue = "") String jobDescription) throws IOException {
-        return ResponseEntity.ok(freeAnalyzeService.analyze(file, jobDescription));
+            @RequestParam(value = "jobDescription", defaultValue = "") String jobDescription,
+            @AuthenticationPrincipal UserDetails userDetails) throws IOException {
+        return ResponseEntity.ok(freeAnalyzeService.analyze(file, jobDescription, userDetails != null ? userDetails.getUsername() : null));
     }
 
     @GetMapping("/my")

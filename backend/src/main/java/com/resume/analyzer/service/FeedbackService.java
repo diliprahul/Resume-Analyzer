@@ -32,6 +32,7 @@ public class FeedbackService {
         return map(fb);
     }
 
+    @Transactional(readOnly = true)
     public List<FeedbackResponse> getAllFeedback() {
         return feedbackRepository.findAllByOrderByFeedbackDateDesc()
                 .stream().map(this::map).collect(Collectors.toList());

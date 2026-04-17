@@ -41,16 +41,21 @@ public class JobService {
 
     private void sendAlertsToAllUsers(Job job) {
         List<User> users = userRepository.findByRole(User.Role.USER);
-        String skillsText = String.join(", ", job.getSkills());
+        String skillsText = job.getSkills() != null ? String.join(", ", job.getSkills()) : "";
         for (User user : users) {
-            Notification notif = Notification.builder()
-                    .user(user).job(job)
-                    .message("New job posted: " + job.getJobName() + " at " + job.getCompanyName())
-                    .isRead(false).build();
-            notificationRepository.save(notif);
-            emailService.sendJobAlert(user.getEmail(), user.getUsername(),
-                    job.getJobName(), job.getCompanyName(),
-                    job.getSalary() != null ? job.getSalary() : "Not specified", skillsText);
+            try {
+                Notification notif = Notification.builder()
+                        .user(user).job(job)
+                        .message("New job posted: " + job.getJobName() + " at " + job.getCompanyName())
+                        .isRead(false).build();
+                notificationRepository.save(notif);
+                emailService.sendJobAlert(user.getEmail(), user.getUsername(),
+                        job.getJobName(), job.getCompanyName(),
+                        job.getSalary() != null ? job.getSalary() : "Not specified", skillsText);
+            } catch (Exception e) {
+                log.error("Failed to send alert to user {}: {}", user.getUsername(), e.getMessage());
+                // Continue with other users even if one fails
+            }
         }
         log.info("Job alerts sent to {} users for job: {}", users.size(), job.getJobName());
     }
@@ -69,7 +74,7 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public List<JobResponse> getAllJobs() {
-        return jobRepository.findAll().stream()
+        return jobRepository.findAllWithSkills().stream()
                 .map(j -> mapToResponse(j, false)).collect(Collectors.toList());
     }
 
@@ -86,8 +91,11 @@ public class JobService {
 
     @Transactional
     public void deleteJob(Long id) {
-        jobRepository.findById(id).orElseThrow(() -> new RuntimeException("Job not found"));
-        jobRepository.deleteById(id);
+        Job job = jobRepository.findById(id).orElseThrow(() -> new RuntimeException("Job not found"));
+        // Delete associated notifications and resume submissions first
+        notificationRepository.deleteByJobId(id);
+        resumeSubmissionRepository.deleteByJobId(id);
+        jobRepository.delete(job);
     }
 
     private JobResponse mapToResponse(Job job, boolean applied) {
